@@ -16,6 +16,7 @@ const options = {
     .opblock-tag { font-size: 1.2em; }
   `,
 };
+
 app.use("/api-docs", (req, res, next) => {
   const auth = { login: "admin", password: "xqual123" };
   const b64auth = (req.headers.authorization || "").split(" ")[1] || "";

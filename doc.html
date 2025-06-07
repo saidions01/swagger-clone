@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>XQual REST API Documentation</title>
+  <style>
+     :root {
+            --primary-color: #30a446;
+            --secondary-color: #2c3e50;
+            --light-gray: #f8f9fa;
+            --border-color: #eaeaea;
+            --text-color: #333;
+        }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      display: flex;
+    }
+    nav {
+      width: 250px;
+      background: #f4f4f4;
+      padding: 1em;
+      border-right: 1px solid #ccc;
+      height: 100vh;
+      position: sticky;
+      top: 0;
+      overflow-y: auto;
+    }
+    nav ul {
+      list-style: none;
+      padding: 0;
+    }
+    nav li {
+      margin-bottom: 10px;
+    }
+    nav a {
+      text-decoration: none;
+      color: #333;
+      cursor: pointer;
+      display: block;
+      padding: 5px 10px;
+      border-radius: 4px;
+    }
+    nav a:hover,
+    nav a.active {
+      background: #30a446;
+      color: white;
+    }
+
+    main {
+      flex-grow: 1;
+      padding: 2em;
+      overflow-y: auto;
+      height: 100vh;
+    }
+    section {
+      margin-bottom: 3em;
+    }
+    h2 {
+      border-bottom: 2px solid #30a446;
+      padding-bottom: 0.2em;
+      margin-bottom: 1em;
+    }
+    .endpoint {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 1em;
+      margin-bottom: 1em;
+      background: #fafafa;
+    }
+    .endpoint h3 {
+      margin-top: 0;
+      margin-bottom: 0.3em;
+    }
+    .method {
+      font-weight: bold;
+      color: white;
+      background: #30a446;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.9em;
+      margin-right: 10px;
+    }
+    .path {
+      font-family: monospace;
+      font-size: 1.1em;
+      color: #333;
+    }
+    .summary {
+      font-style: italic;
+      margin-bottom: 0.5em;
+    }
+    .param {
+      margin-left: 1em;
+      font-size: 0.9em;
+    }
+    .param strong {
+      color: #30a446;
+    }
+       .sidebar-header {
+          
+            padding: 20px;
+          
+           
+        }
+        
+        .sidebar-header h1 {
+            font-size: 1 rem;
+            margin-bottom: 5px;
+            color: var(--primary-color);
+        }
+      .sidebar-nav {
+            padding: 15px 0;
+        }
+  </style>
+</head>
+<body>
+
+<nav>
+     <div class="sidebar-header">
+            <img src="./xqual_green.png" alt="XQual Logo">
+            <h1>XQual REST API</h1>
+        </div>
+  <ul id="categoryList">
+    <!-- Categories will be injected here -->
+  </ul>
+</nav>
+
+<main id="content">
+  <!-- API documentation content will be injected here -->
+</main>
+
+<script>
+  // Fetch the JSON file
+  fetch('./documentation.json')
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Erreur lors du chargement du fichier JSON');
+      }
+      return response.json();
+    })
+    .then(apiDoc => {
+      const categories = groupEndpointsByCategory(apiDoc.paths);
+      renderCategories(categories);
+      renderContent(categories);
+    })
+    .catch(error => {
+      console.error('Erreur:', error);
+      document.getElementById('content').textContent = 'Impossible de charger la documentation API.';
+    });
+
+  function groupEndpointsByCategory(paths) {
+    const categories = {};
+
+    for (const path in paths) {
+      for (const method in paths[path]) {
+        const endpoint = paths[path][method];
+        if (!endpoint.tags || endpoint.tags.length === 0) {
+          if (!categories["Uncategorized"]) categories["Uncategorized"] = [];
+          categories["Uncategorized"].push({ path, method, ...endpoint });
+        } else {
+          endpoint.tags.forEach(tag => {
+            if (!categories[tag]) categories[tag] = [];
+            categories[tag].push({ path, method, ...endpoint });
+          });
+        }
+      }
+    }
+    return categories;
+  }
+
+  function renderCategories(categories) {
+    const ul = document.getElementById('categoryList');
+    ul.innerHTML = '';
+    Object.keys(categories).forEach((cat, i) => {
+      const li = document.createElement('li');
+      const a = document.createElement('a');
+      a.textContent = cat;
+      a.href = `#${cat}`;
+      if(i === 0) a.classList.add('active');
+      a.addEventListener('click', (e) => {
+        document.querySelectorAll('nav a').forEach(link => link.classList.remove('active'));
+        a.classList.add('active');
+      });
+      li.appendChild(a);
+      ul.appendChild(li);
+    });
+  }
+
+ 
+  function renderContent(categories) {
+  const main = document.getElementById('content');
+  main.innerHTML = '';
+
+  for (const category in categories) {
+    const section = document.createElement('section');
+    section.id = category;
+
+    const h2 = document.createElement('h2');
+    h2.textContent = category;
+    section.appendChild(h2);
+
+    categories[category].forEach(endpoint => {
+      const div = document.createElement('div');
+      div.classList.add('endpoint');
+
+      const title = document.createElement('h3');
+      title.innerHTML = `<span class="method">${endpoint.method.toUpperCase()}</span><span class="path">${endpoint.path}</span>`;
+      div.appendChild(title);
+
+      if (endpoint.summary) {
+        const summary = document.createElement('p');
+        summary.classList.add('summary');
+        summary.textContent = endpoint.summary;
+        div.appendChild(summary);
+      }
+
+      if (endpoint.description) {
+        const desc = document.createElement('p');
+        desc.textContent = endpoint.description;
+        div.appendChild(desc);
+      }
+
+      if (endpoint.parameters && endpoint.parameters.length > 0) {
+        const paramsTitle = document.createElement('p');
+        paramsTitle.innerHTML = '<strong>Paramètres :</strong>';
+        div.appendChild(paramsTitle);
+
+        const ulParams = document.createElement('ul');
+        endpoint.parameters.forEach(param => {
+          const li = document.createElement('li');
+          li.classList.add('param');
+          li.innerHTML = `<strong>${param.name}</strong> (${param.in}${param.required ? ', obligatoire' : ''}): ${param.description || 'Pas de description'}`;
+          ulParams.appendChild(li);
+        });
+        div.appendChild(ulParams);
+      }
+
+      // ✅ Append the endpoint to the section (not directly to main)
+      section.appendChild(div);
+    });
+
+    // ✅ Now append the full section to main
+    main.appendChild(section);
+  }
+}
+
+</script>
+
+</body>
+</html>

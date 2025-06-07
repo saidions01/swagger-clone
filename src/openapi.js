@@ -1,5 +1,35 @@
 const javaParser = require("./parser");
 
+// Mots-clés par catégorie pour deviner dynamiquement les tags
+const keywordCategories = {
+  authentication: ["auth", "login", "logout", "sso", "token", "register"],
+  users: ["user", "profile", "license", "info"],
+  teams: ["team"],
+  suts: ["sut"],
+  requirements: ["requirement"],
+  specifications: ["specification"],
+  tests: ["test"],
+  "test-attributes": ["attribute"],
+  "test-cases": ["case"],
+  campaigns: ["campaign"],
+  bugs: ["bug"],
+  folders: ["folder"],
+  "custom-fields": ["custom", "field"],
+  reports: ["report"],
+  misc: ["log", "setting", "database", "check"],
+};
+
+// Devine le tag en fonction du nom de l'endpoint
+const guessTagFromEndpoint = (endpointName) => {
+  const lowerEndpoint = endpointName.toLowerCase();
+  for (const [tag, keywords] of Object.entries(keywordCategories)) {
+    if (keywords.some((kw) => lowerEndpoint.includes(kw))) {
+      return tag;
+    }
+  }
+  return "misc";
+};
+
 const generateSpec = (endpoints, javaCode) => {
   const paths = {};
 
@@ -15,9 +45,11 @@ const generateSpec = (endpoints, javaCode) => {
       }));
 
     const method = javaParser.extractMethod(javaCode, endpoint);
+    const tag = guessTagFromEndpoint(endpoint);
 
     const pathItem = {
       [method]: {
+        tags: [tag],
         summary: `Endpoint: ${endpoint}`,
         description: `Endpoint détecté dans le code source`,
         operationId: endpoint.replace(/[^a-zA-Z0-9_]/g, "_"),
@@ -60,11 +92,11 @@ const generateSpec = (endpoints, javaCode) => {
       },
     };
 
-    paths[
-      `/${endpoint
-        .replace(/[A-Z]/g, (m) => "-" + m.toLowerCase())
-        .replace(/^get-?/, "")}`
-    ] = pathItem;
+    const pathKey = `/${endpoint
+      .replace(/[A-Z]/g, (m) => "-" + m.toLowerCase())
+      .replace(/^get-?/, "")}`;
+
+    paths[pathKey] = pathItem;
   });
 
   return {
